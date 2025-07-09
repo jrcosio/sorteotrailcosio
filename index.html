@@ -374,6 +374,65 @@
             50% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
+        .mega-number-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 
+                0 0 20px rgba(255, 255, 255, 0.8),
+                0 0 40px rgba(255, 107, 107, 0.6),
+                0 0 60px rgba(138, 43, 226, 0.4),
+                0 0 80px rgba(0, 191, 255, 0.3);
+            z-index: 1002;
+            pointer-events: none;
+            animation: megaNumberShow 3s ease-in-out forwards;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #f093fb);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: megaNumberShow 3s ease-in-out forwards, gradientShift 2s ease infinite;
+        }
+
+        @keyframes megaNumberShow {
+            0% { 
+                transform: translate(-50%, -50%) scale(0) rotateY(180deg); 
+                opacity: 0; 
+            }
+            20% { 
+                transform: translate(-50%, -50%) scale(1.2) rotateY(0deg); 
+                opacity: 1; 
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1) rotateY(0deg); 
+                opacity: 1; 
+            }
+            80% { 
+                transform: translate(-50%, -50%) scale(1.1) rotateY(0deg); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(0) rotateY(-180deg); 
+                opacity: 0; 
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mega-number-animation {
+                font-size: 12rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .mega-number-animation {
+                font-size: 8rem;
+            }
+        }
+
         @media (max-width: 768px) {
             .header h1 { font-size: 2rem; }
             .current-number { font-size: 3rem; }
@@ -390,8 +449,7 @@
     <div class="container">
         <div class="header">
             <h1>🏃‍♂️ II Trail Sierra de Peñasagra 🏃‍♀️</h1>
-            <h2>Corremos por Adriana</h2>
-            <h3>Sorteo de Números</h3>
+            <h2>Corremos por Adriana - Sorteo de Números</h2>
         </div>
 
         <div class="controls">
@@ -521,9 +579,9 @@
             if (drawnNumbers.length === 0) {
                 historyContainer.innerHTML = '<span style="color: rgba(255,255,255,0.6);">Ningún número sorteado aún</span>';
             } else {
-                historyContainer.innerHTML = drawnNumbers
-                    .slice(-20) // Show last 20 numbers
-                    .reverse()
+                // Mostrar todos los números sorteados (más recientes primero)
+                const sortedNumbers = [...drawnNumbers].reverse();
+                historyContainer.innerHTML = sortedNumbers
                     .map(num => `<span class="history-number">${num}</span>`)
                     .join('');
             }
@@ -546,6 +604,22 @@
             }
         }
 
+        function showMegaNumber(number) {
+            const megaNumber = document.createElement('div');
+            megaNumber.classList.add('mega-number-animation');
+            megaNumber.textContent = number;
+            document.body.appendChild(megaNumber);
+            
+            // Crear confetti durante la animación gigante
+            setTimeout(() => {
+                createConfetti();
+            }, 600);
+            
+            setTimeout(() => {
+                megaNumber.remove();
+            }, 3000);
+        }
+
         function showCelebration(number) {
             const celebration = document.createElement('div');
             celebration.classList.add('celebration');
@@ -561,13 +635,16 @@
             const numberElement = document.getElementById('currentNumber');
             const infoElement = document.getElementById('numberInfo');
             
+            // FASE 1: Animación de números girando rápido
             let animationCount = 0;
-            const maxAnimations = 20;
+            const maxAnimations = 15;
             const animationSpeed = 100;
             
-            const animate = () => {
+            infoElement.textContent = "🎲 Sorteando número...";
+            
+            const spinAnimation = () => {
                 if (animationCount < maxAnimations) {
-                    // Show random numbers during animation
+                    // Mostrar números aleatorios durante la animación
                     const randomNum = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
                     numberElement.textContent = randomNum;
                     numberElement.classList.add('spinning');
@@ -577,26 +654,34 @@
                     }, animationSpeed);
                     
                     animationCount++;
-                    setTimeout(animate, animationSpeed);
+                    setTimeout(spinAnimation, animationSpeed);
                 } else {
-                    // Show final number
-                    numberElement.textContent = finalNumber;
-                    numberElement.classList.add('spinning');
-                    infoElement.textContent = `¡Número ${finalNumber} sorteado! Quedan ${availableNumbers.length} números disponibles.`;
+                    // FASE 2: OCULTAR el display principal y mostrar el número GIGANTE
+                    numberElement.textContent = ""; // Vaciar el display
+                    infoElement.textContent = "🎉 ¡NÚMERO SORTEADO! 🎉";
+                    showMegaNumber(finalNumber);
                     
-                    // Create confetti and celebration
-                    createConfetti();
-                    showCelebration(finalNumber);
-                    
+                    // FASE 3: Después de 3 segundos, mostrarlo en el display principal
                     setTimeout(() => {
-                        numberElement.classList.remove('spinning');
+                        numberElement.textContent = finalNumber;
+                        numberElement.classList.add('spinning');
+                        infoElement.textContent = `¡Número ${finalNumber} sorteado! Quedan ${availableNumbers.length} números disponibles.`;
+                        
+                        setTimeout(() => {
+                            numberElement.classList.remove('spinning');
+                        }, 500);
+                    }, 3000);
+                    
+                    // FASE 4: Después de 4 segundos, añadirlo a la lista y finalizar
+                    setTimeout(() => {
+                        updateDisplay();
                         isAnimating = false;
                         updateButtonState();
-                    }, 500);
+                    }, 4000);
                 }
             };
             
-            animate();
+            spinAnimation();
         }
 
         function realizarSorteo() {
@@ -618,14 +703,13 @@
             availableNumbers.splice(randomIndex, 1);
             drawnNumbers.push(selectedNumber);
             
-            // Animate the number change
+            // Iniciar la animación completa
             animateNumberChange(selectedNumber);
             
-            // Update stats and display
-            updateStats();
+            // Actualizar estadísticas al final de todo el proceso
             setTimeout(() => {
-                updateDisplay();
-            }, 2000);
+                updateStats();
+            }, 4000);
         }
 
         function updateButtonState() {
